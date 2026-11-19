@@ -42,6 +42,18 @@ PyScrappy is an AI-native web scraping toolkit that turns websites into structur
 pip install pyscrappy
 ```
 
+### See the scrapers running
+
+Run the live demo from the repository root. It calls the public Wikipedia and
+Hacker News endpoints, prints each result, and reports failures per scraper:
+
+```sh
+python examples/demo_scrapers.py --query "Python programming" --limit 3
+```
+
+The demo does not require API keys. A network block can make an individual
+scraper fail, but the output still shows the result from any scraper that ran.
+
 **Optional extras:**
 
 ```sh
