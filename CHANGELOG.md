@@ -11,6 +11,14 @@ All notable changes to PyScrappy are documented here. The format is based on
   `search_arbeitnow_jobs` query Arbeitnow's public job-board API with filters for
   `query`, `location`, `remote`, and `job_type`, plus `max_pages` and `max_results`
   controls. Results include normalized job fields and plain-text descriptions.
+- **Local web dashboard (`pyscrappy-web`).** Optional `web` extra serves a single-page
+  tech-job search UI for Arbeitnow and LinkedIn Jobs (plus Gupy when registered).
+  It has one common search form, hides unsupported fields per source, compares all
+  sources side by side, and shows jobs, typed errors and elapsed time. The table
+  clips descriptions to two lines with "ver mais", renders tags/types as chips and
+  merges the duplicated `job_type` / `job_types` columns. The JSON API validates
+  parameters against an explicit allowlist, binds to localhost by default and is
+  documented at `/docs`.
 
 ## [1.6.4] - 2026-09-25
 

@@ -53,7 +53,7 @@ class TestArbeitnow:
         assert "&lt;" not in description
 
     def test_parse_plain_html_description(self):
-        plain = "<div class=\"content-intro\"><p>Build <strong>and</strong> ship</p></div>"
+        plain = '<div class="content-intro"><p>Build <strong>and</strong> ship</p></div>'
         s = _with(ArbeitnowScraper(), self._payload(plain))
         r = s.scrape(max_results=5)
         assert r.data[0]["description"] == "Build and ship"

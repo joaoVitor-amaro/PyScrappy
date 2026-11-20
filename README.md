@@ -54,6 +54,34 @@ python examples/demo_scrapers.py --query "Python programming" --limit 3
 The demo does not require API keys. A network block can make an individual
 scraper fail, but the output still shows the result from any scraper that ran.
 
+### Web dashboard (buscador de vagas de TI)
+
+The optional local UI focuses only on tech-job sources: **Arbeitnow**, **LinkedIn
+Jobs**, plus **Gupy** when a Gupy scraper is registered in the PyScrappy registry.
+It uses a single common search form (keyword, location, remote, job type, max.
+pages and max. results); fields a source does not support are hidden and disabled.
+
+"Comparar fontes" runs the same query on every source and shows jobs found,
+elapsed time and errors side by side. The results table clips descriptions to two
+lines with "ver mais", renders tags and job types as chips, and merges the
+duplicated `job_type` / `job_types` columns. Zero results without errors is shown
+as "Nenhuma vaga com esses filtros"; source errors (authwall, 429, 5xx) are shown
+from `ScrapeResult.errors`. The UI notes that Arbeitnow focuses on European jobs
+and keeps source attribution in the footer.
+
+```sh
+pip install 'pyscrappy[web]'   # needs Python 3.11+
+pyscrappy-web                  # http://127.0.0.1:8000
+pyscrappy-web --host 0.0.0.0 --port 8080
+```
+
+The server binds to `127.0.0.1` by default and has **no authentication**, so only
+change `--host` when you deliberately want remote access. The UI uses
+`GET /api/scrapers` and `POST /api/scrape/{name}`; `GET /docs` shows the OpenAPI
+schema. Only the curated job sources are accepted, input is validated and capped
+on the server, and submitted values never reach the scraper config or proxy
+settings. Cite [Arbeitnow](https://www.arbeitnow.com) when presenting its listings.
+
 **Optional extras:**
 
 ```sh
@@ -66,6 +94,9 @@ pip install 'pyscrappy[dataframe]'
 
 # MCP server (use PyScrappy's scrapers as AI-agent tools)
 pip install 'pyscrappy[mcp]'
+
+# Web dashboard (interactive demo, needs Python 3.11+)
+pip install 'pyscrappy[web]'
 
 # Stealth (TLS-fingerprint impersonation to bypass anti-bot filters)
 pip install 'pyscrappy[stealth]'
