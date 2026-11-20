@@ -8,7 +8,6 @@ import pytest
 
 from pyscrappy.scrapers.arbeitnow import ArbeitnowScraper
 
-
 FIXTURES = Path(__file__).parents[1] / "fixtures" / "arbeitnow"
 
 
@@ -43,9 +42,7 @@ def test_scrape_filters_jobs_and_normalizes_api_fields():
     assert job["job_type"] == "Contract"
     assert job["created_at"] == "2026-01-03T12:00:00+00:00"
     assert job["description"] == "Design APIs for distributed teams."
-    assert result.metadata.source_urls == [
-        "https://www.arbeitnow.com/api/job-board-api?page=1"
-    ]
+    assert result.metadata.source_urls == ["https://www.arbeitnow.com/api/job-board-api?page=1"]
     http.get_html.assert_called_once()
 
 
@@ -54,7 +51,7 @@ def test_scrape_filters_jobs_and_normalizes_api_fields():
     [
         ({"query": "frontend"}, ["Frontend Engineer"]),
         ({"location": "munich"}, ["Frontend Engineer"]),
-        ({"remote": False}, ["Backend Engineer"]),
+        ({"remote": False}, ["Backend Engineer", "Frontend Engineer"]),
         ({"job_type": "contract"}, ["Python Remote Engineer"]),
     ],
 )

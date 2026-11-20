@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PyScrappy · Buscador de Vagas de TI</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --ink: #16213b;
+    --muted: #5f6b85;
+    --line: #dde3ef;
+    --accent: #3457d5;
+    --accent-soft: #e8edff;
+    --ok: #16794c;
+    --ok-soft: #e4f6ec;
+    --bad: #b4232c;
+    --bad-soft: #fdeaea;
+    --chip: #eef2fb;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 18px 28px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .logo { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 11px; background: var(--accent); color: #fff; font-weight: 800; letter-spacing: -.5px; }
+  .topbar h1 { margin: 0; font-size: 19px; }
+  .topbar p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .badge { margin-left: auto; padding: 5px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 700; }
+  .layout { display: grid; grid-template-columns: minmax(280px, 360px) 1fr; gap: 18px; padding: 20px 28px; align-items: start; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; box-shadow: 0 2px 10px rgba(22, 33, 59, .04); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .scraper-list { display: grid; gap: 8px; margin-bottom: 10px; }
+  .scraper-btn { display: grid; gap: 2px; width: 100%; padding: 11px 13px; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--ink); cursor: pointer; font: inherit; }
+  .scraper-btn:hover { border-color: var(--accent); }
+  .scraper-btn.active { border-color: var(--accent); background: var(--accent-soft); }
+  .scraper-title { font-weight: 700; }
+  .scraper-desc { color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .note { margin: 0 0 18px; padding: 9px 11px; border-left: 3px solid var(--accent); background: var(--accent-soft); color: var(--ink); font-size: 12px; border-radius: 4px; }
+  .field { display: grid; gap: 5px; margin-bottom: 13px; }
+  .field label { font-weight: 600; font-size: 13px; }
+  .field input, .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); font: inherit; }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  .field input:disabled, .field select:disabled { background: #f3f5fa; color: var(--muted); }
+  .help { color: var(--muted); font-size: 12px; }
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+  button.action { padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink); cursor: pointer; font: inherit; font-weight: 600; }
+  button.action.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.action:disabled { opacity: .55; cursor: not-allowed; }
+  .status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0; background: var(--bg); color: var(--muted); }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.bad { background: var(--bad-soft); color: var(--bad); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 10px 0 14px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
+  .meta a { color: var(--accent); }
+  .errors { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); font-size: 13px; }
+  .errors div + div { margin-top: 4px; }
+  .tabs { display: flex; gap: 6px; margin: 14px 0 10px; }
+  .tabs button { padding: 6px 11px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--muted); cursor: pointer; font: inherit; font-size: 13px; }
+  .tabs button.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .table-wrap { overflow: auto; max-height: 62vh; border: 1px solid var(--line); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { position: sticky; top: 0; background: #f7f9fd; font-size: 12px; text-transform: capitalize; white-space: nowrap; }
+  td { max-width: 420px; overflow-wrap: anywhere; }
+  td a { color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--ink); font-size: 12px; white-space: nowrap; }
+  .long-text { max-width: 400px; }
+  .clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .link-button { margin-left: 6px; padding: 0; border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12px; font-weight: 600; }
+  .compare-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+  .compare-card { padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #fbfcff; }
+  .compare-title { font-weight: 700; }
+  .compare-count { margin: 8px 0 4px; font-size: 26px; font-weight: 800; color: var(--accent); }
+  .compare-count small { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .compare-meta { color: var(--muted); font-size: 12px; }
+  pre { overflow: auto; max-height: 62vh; margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #0f1730; color: #dce6ff; font-size: 12px; }
+  .empty { padding: 34px 10px; text-align: center; color: var(--muted); }
+  footer { padding: 16px 28px 26px; color: var(--muted); font-size: 12px; }
+  footer a { color: var(--accent); }
+  footer .note { display: inline-block; margin: 6px 6px 0 0; padding: 4px 8px; background: var(--bg); border-left: none; }
+  [hidden] { display: none !important; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; padding: 14px; } .topbar, footer { padding-left: 14px; padding-right: 14px; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">PS</div>
+  <div>
+    <h1>PyScrappy · Buscador de Vagas de TI</h1>
+    <p>Compare vagas de TI em fontes públicas e veja resultados, erros e tempo de resposta.</p>
+  </div>
+  <span class="badge">v1.6.4</span>
+</header>
+
+<main class="layout">
+  <aside class="panel">
+    <div class="panel-head">Fontes de vagas</div>
+    <div id="scraper-list" class="scraper-list"></div>
+    <p class="note">Nota: o Arbeitnow tem foco em vagas na Europa.</p>
+    <div class="panel-head">Filtros comuns</div>
+    <form id="scraper-form"></form>
+    <div class="actions">
+      <button id="run-btn" class="action primary" type="submit" form="scraper-form">Buscar vagas</button>
+      <button id="compare-btn" class="action" type="button">Comparar fontes</button>
+    </div>
+  </aside>
+
+  <section class="panel">
+    <div class="panel-head"><span>Resultado</span><span id="status" class="status" role="status" aria-live="polite">Pronto</span></div>
+    <div id="meta" class="meta"></div>
+    <div id="errors" class="errors" hidden></div>
+    <div class="tabs">
+      <button id="tab-table" class="active" type="button">Tabela</button>
+      <button id="tab-json" type="button">JSON</button>
+    </div>
+    <div id="table-view" class="table-wrap"><div class="empty">Escolha uma fonte e clique em Buscar vagas.</div></div>
+    <pre id="json-view" hidden></pre>
+  </section>
+</main>
+
+<footer id="attribution"></footer>
+
+<script>
+const state = { fields: [], specs: [], selected: null, controller: null, wrappers: {} };
+const byId = (id) => document.getElementById(id);
+
+function node(tag, className, text) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (text !== undefined) element.textContent = text;
+  return element;
+}
+
+function safeUrl(value) {
+  if (typeof value !== 'string') return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function setStatus(kind, text) {
+  const status = byId('status');
+  status.className = 'status' + (kind ? ' ' + kind : '');
+  status.textContent = text;
+}
+
+function setBusy(busy) {
+  byId('run-btn').disabled = busy;
+  byId('compare-btn').disabled = busy;
+  Object.values(state.wrappers).forEach((entry) => { entry.input.disabled = busy || !isSupported(entry.field.name); });
+}
+
+function isSupported(name) {
+  return Boolean(state.selected && state.selected.fields.includes(name));
+}
+
+async function loadCatalog() {
+  const response = await fetch('/api/scrapers');
+  if (!response.ok) throw new Error('Não foi possível carregar as fontes de vagas.');
+  const payload = await response.json();
+  state.fields = payload.fields;
+  state.specs = payload.scrapers;
+  renderList();
+  renderForm();
+  renderAttribution();
+  if (state.specs.length) select(state.specs[0].id);
+}
+
+function renderList() {
+  const list = byId('scraper-list');
+  list.replaceChildren();
+  state.specs.forEach((spec) => {
+    const button = node('button', 'scraper-btn');
+    button.type = 'button';
+    button.dataset.id = spec.id;
+    button.append(node('span', 'scraper-title', spec.label), node('span', 'scraper-desc', spec.description));
+    button.addEventListener('click', () => select(spec.id));
+    list.append(button);
+  });
+}
+
+function select(id) {
+  state.selected = state.specs.find((spec) => spec.id === id) || null;
+  byId('scraper-list').querySelectorAll('.scraper-btn').forEach((button) => {
+    button.classList.toggle('active', button.dataset.id === id);
+  });
+  applyCapabilities();
+  clearResult();
+}
+
+function renderForm() {
+  const form = byId('scraper-form');
+  form.replaceChildren();
+  state.wrappers = {};
+  state.fields.forEach((field) => {
+    const wrapper = node('div', 'field');
+    wrapper.dataset.field = field.name;
+    const label = node('label', '', field.label + (field.required ? ' *' : ''));
+    label.htmlFor = 'f-' + field.name;
+    wrapper.append(label);
+    let input;
+    if (field.type === 'select' || field.type === 'tri') {
+      input = node('select');
+      field.options.forEach((option) => {
+        const item = node('option', '', option.label);
+        item.value = option.value;
+        input.append(item);
+      });
+      input.value = field.default === null ? '' : field.default;
+    } else {
+      input = node('input');
+      input.type = field.type === 'number' ? 'number' : 'text';
+      if (field.type === 'number') {
+        if (field.minimum !== null) input.min = field.minimum;
+        if (field.maximum !== null) input.max = field.maximum;
+        input.value = field.default === null ? '' : field.default;
+      } else {
+        input.maxLength = 200;
+        input.value = field.default || '';
+        input.placeholder = field.help || '';
+      }
+    }
+    input.id = 'f-' + field.name;
+    input.name = field.name;
+    wrapper.append(input);
+    if (field.help && field.type !== 'text') wrapper.append(node('small', 'help', field.help));
+    form.append(wrapper);
+    state.wrappers[field.name] = { wrapper, input, field };
+  });
+  applyCapabilities();
+}
+
+function applyCapabilities() {
+  Object.values(state.wrappers).forEach((entry) => {
+    const supported = isSupported(entry.field.name);
+    entry.wrapper.hidden = !supported;
+    entry.input.disabled = !supported;
+    entry.input.required = supported && entry.field.required;
+  });
+}
+
+function collectParams() {
+  const params = {};
+  if (!state.selected) return params;
+  state.selected.fields.forEach((name) => {
+    const entry = state.wrappers[name];
+    if (entry) params[name] = entry.input.value;
+  });
+  return params;
+}
+
+function renderAttribution() {
+  const footer = byId('attribution');
+  footer.replaceChildren(node('span', '', 'Fontes: '));
+  state.specs.forEach((spec, index) => {
+    if (index) footer.append(node('span', '', ', '));
+    const link = node('a', '', spec.label);
+    link.href = spec.source_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    footer.append(link);
+  });
+  footer.append(node('span', '', '. Cite as fontes ao apresentar vagas.'));
+  state.specs.filter((spec) => spec.attribution).forEach((spec) => {
+    footer.append(node('div', 'note', spec.attribution));
+  });
+}
+
+function clearResult() {
+  byId('meta').replaceChildren();
+  byId('errors').replaceChildren();
+  byId('errors').hidden = true;
+  byId('table-view').replaceChildren(node('div', 'empty', 'Escolha uma fonte e clique em Buscar vagas.'));
+  byId('json-view').textContent = '';
+  setStatus('', 'Pronto');
+}
+
+async function callApi(spec, params) {
+  if (state.controller) state.controller.abort();
+  state.controller = new AbortController();
+  const response = await fetch('/api/scrape/' + encodeURIComponent(spec.id), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ params: params }),
+    signal: state.controller.signal,
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.detail || ('HTTP ' + response.status));
+  return body;
+}
+
+function renderMeta(result) {
+  const meta = byId('meta');
+  meta.replaceChildren();
+  meta.append(node('span', '', 'Vagas: ' + result.count));
+  meta.append(node('span', '', 'Tempo: ' + result.elapsed_ms + ' ms'));
+  if (result.truncated) meta.append(node('span', '', 'Resultado truncado'));
+  if (result.metadata && result.metadata.timestamp) meta.append(node('span', '', 'Coleta: ' + result.metadata.timestamp));
+  (result.metadata && result.metadata.source_urls ? result.metadata.source_urls : []).forEach((url) => {
+    const link = safeUrl(url);
+    if (!link) return;
+    const anchor = node('a', '', 'fonte');
+    anchor.href = link;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    meta.append(anchor);
+  });
+}
+
+function renderErrors(messages) {
+  const box = byId('errors');
+  box.replaceChildren();
+  messages.forEach((message) => box.append(node('div', '', message)));
+  box.hidden = box.childElementCount === 0;
+}
+
+function errorMessages(result) {
+  return (result.errors || []).map((error) => {
+    const parts = [];
+    if (error.url) parts.push(error.url + ' — ');
+    parts.push(error.message || 'erro desconhecido');
+    if (error.selector) parts.push(' [' + error.selector + ']');
+    return parts.join('');
+  });
+}
+
+function chips(values) {
+  const wrapper = node('span', 'chips');
+  const items = Array.isArray(values) ? values : (values ? [values] : []);
+  if (!items.length) {
+    wrapper.append(node('span', 'muted', '—'));
+    return wrapper;
+  }
+  items.forEach((value) => wrapper.append(node('span', 'chip', String(value))));
+  return wrapper;
+}
+
+function longText(value) {
+  const wrapper = node('div', 'long-text');
+  const text = String(value === null || value === undefined ? '' : value);
+  const content = node('span', 'clamp', text);
+  wrapper.append(content);
+  if (text.length > 120) {
+    const button = node('button', 'link-button', 'ver mais');
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      const clamped = content.classList.toggle('clamp');
+      button.textContent = clamped ? 'ver mais' : 'ver menos';
+    });
+    wrapper.append(button);
+  }
+  return wrapper;
+}
+
+function renderCell(item, column) {
+  if (column === 'tipos') return chips(item.job_types || (item.job_type ? [item.job_type] : []));
+  const value = item[column];
+  if (column === 'tags' || Array.isArray(value)) return chips(value);
+  if (column === 'description') return longText(value);
+  const link = safeUrl(value);
+  if (link) {
+    const anchor = node('a', '', value);
+    anchor.href = link;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    return anchor;
+  }
+  if (value === null || value === undefined || value === '') return node('span', '', '—');
+  return node('span', '', String(value));
+}
+
+function jobColumns(data) {
+  const columns = [];
+  data.forEach((item) => {
+    Object.keys(item).forEach((key) => {
+      if (key === 'job_type' || key === 'job_types') {
+        if (!columns.includes('tipos')) columns.push('tipos');
+      } else if (!columns.includes(key)) {
+        columns.push(key);
+      }
+    });
+  });
+  return columns;
+}
+
+function renderTable(result) {
+  const view = byId('table-view');
+  view.replaceChildren();
+  if (!result.data.length) {
+    const messages = errorMessages(result);
+    const text = messages.length ? messages.join(' ') : 'Nenhuma vaga com esses filtros';
+    view.append(node('div', 'empty', text));
+    return;
+  }
+  const columns = jobColumns(result.data);
+  const table = node('table');
+  const head = node('tr');
+  columns.forEach((column) => head.append(node('th', '', column === 'tipos' ? 'Tipos' : column)));
+  const thead = node('thead');
+  thead.append(head);
+  const body = node('tbody');
+  result.data.forEach((item) => {
+    const row = node('tr');
+    columns.forEach((column) => {
+      const cell = node('td');
+      cell.append(renderCell(item, column));
+      row.append(cell);
+    });
+    body.append(row);
+  });
+  table.append(thead, body);
+  view.append(table);
+}
+
+function renderResult(result) {
+  const messages = errorMessages(result);
+  renderMeta(result);
+  renderErrors(messages);
+  renderTable(result);
+  byId('json-view').textContent = JSON.stringify(result, null, 2);
+  if (result.count > 0) setStatus('ok', result.count + ' vagas');
+  else if (messages.length) setStatus('bad', 'Erro na fonte');
+  else setStatus('', 'Nenhuma vaga com esses filtros');
+}
+
+function renderComparison(rows) {
+  byId('meta').replaceChildren();
+  const view = byId('table-view');
+  const grid = node('div', 'compare-grid');
+  rows.forEach((row) => {
+    const card = node('div', 'compare-card');
+    card.append(node('div', 'compare-title', row.label));
+    const count = node('div', 'compare-count', row.count === null ? '—' : String(row.count));
+    count.append(node('small', '', ' vagas'));
+    card.append(count);
+    card.append(node('div', 'compare-meta', 'Tempo: ' + row.elapsed + ' ms'));
+    card.append(node('div', 'compare-meta', 'Erros: ' + row.errors.length));
+    grid.append(card);
+  });
+  view.replaceChildren(grid);
+
+  const messages = [];
+  rows.forEach((row) => row.errors.forEach((message) => messages.push(row.label + ': ' + message)));
+  renderErrors(messages);
+  byId('json-view').textContent = JSON.stringify(rows, null, 2);
+
+  const anyData = rows.some((row) => typeof row.count === 'number' && row.count > 0);
+  const anyError = rows.some((row) => row.count === null || row.errors.length);
+  if (anyData) setStatus('ok', 'Comparação concluída');
+  else if (anyError) setStatus('bad', 'Erros em todas as fontes');
+  else {
+    setStatus('', 'Nenhuma vaga com esses filtros');
+    view.append(node('div', 'empty', 'Nenhuma vaga com esses filtros'));
+  }
+}
+
+byId('scraper-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!state.selected) return;
+  const spec = state.selected;
+  setBusy(true);
+  setStatus('', 'Buscando vagas em ' + spec.label + '…');
+  try {
+    renderResult(await callApi(spec, collectParams()));
+  } catch (error) {
+    setStatus('bad', 'Falha');
+    renderErrors([error.message]);
+  } finally {
+    setBusy(false);
+  }
+});
+
+byId('compare-btn').addEventListener('click', async () => {
+  const params = collectParams();
+  setBusy(true);
+  const rows = [];
+  for (const spec of state.specs) {
+    setStatus('', 'Comparando ' + spec.label + '…');
+    try {
+      const result = await callApi(spec, params);
+      rows.push({
+        label: spec.label,
+        count: result.count,
+        elapsed: result.elapsed_ms,
+        errors: errorMessages(result),
+      });
+    } catch (error) {
+      rows.push({ label: spec.label, count: null, elapsed: null, errors: [error.message] });
+    }
+  }
+  renderComparison(rows);
+  setBusy(false);
+});
+
+byId('tab-table').addEventListener('click', () => {
+  byId('table-view').hidden = false;
+  byId('json-view').hidden = true;
+  byId('tab-table').classList.add('active');
+  byId('tab-json').classList.remove('active');
+});
+
+byId('tab-json').addEventListener('click', () => {
+  byId('table-view').hidden = true;
+  byId('json-view').hidden = false;
+  byId('tab-json').classList.add('active');
+  byId('tab-table').classList.remove('active');
+});
+
+loadCatalog().catch((error) => {
+  setStatus('bad', 'Falha ao carregar');
+  byId('scraper-list').replaceChildren(node('div', 'empty', error.message));
+});
+</script>
+</body>
+</html>

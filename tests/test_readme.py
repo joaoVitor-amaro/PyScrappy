@@ -12,3 +12,11 @@ def test_readme_documents_mcp_runtime_requirements_and_transports():
     assert "pyscrappy-mcp          # stdio (default)" in readme
     assert "pyscrappy-mcp --http   # Streamable HTTP" in readme
     assert "pyscrappy-mcp --sse    # legacy SSE" in readme
+
+
+def test_readme_documents_web_dashboard():
+    readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
+
+    assert "pip install 'pyscrappy[web]'" in readme
+    assert "pyscrappy-web" in readme
+    assert "Web dashboard" in readme

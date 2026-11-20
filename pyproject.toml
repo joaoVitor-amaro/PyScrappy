@@ -67,6 +67,12 @@ mcp = [
     "fastmcp>=2.0; python_version >= '3.10'",
     "anyio>=4.0; python_version >= '3.10'",
 ]
+# The web dashboard uses FastAPI, whose current Starlette stack needs Python
+# >=3.11. The core library keeps supporting 3.9, so this extra is gated too.
+web = [
+    "fastapi>=0.110; python_version >= '3.11'",
+    "uvicorn>=0.27; python_version >= '3.11'",
+]
 all = [
     "playwright>=1.40",
     "pandas>=1.5",
@@ -76,11 +82,14 @@ all = [
     "openpyxl>=3.1",
     "fastmcp>=2.0; python_version >= '3.10'",
     "anyio>=4.0; python_version >= '3.10'",
+    "fastapi>=0.110; python_version >= '3.11'",
+    "uvicorn>=0.27; python_version >= '3.11'",
 ]
 
 [project.scripts]
 pyscrappy = "pyscrappy.cli:main"
 pyscrappy-mcp = "pyscrappy.mcp.server:main"
+pyscrappy-web = "pyscrappy.web.app:main"
 
 [project.urls]
 Homepage = "https://github.com/mldsveda/PyScrappy"
